@@ -1,0 +1,32 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.30320.27
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ParentsGuard", "ParentsGuard\ParentsGuard.csproj", "{1A27C91A-8F12-4B35-A56D-B1750A876301}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{F5644230-172F-41ED-8E61-ABBC384F08B1}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{BC70EDAF-302A-4AF5-96B9-161FBE05DBA4}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{1A27C91A-8F12-4B35-A56D-B1750A876301}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1A27C91A-8F12-4B35-A56D-B1750A876301}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1A27C91A-8F12-4B35-A56D-B1750A876301}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1A27C91A-8F12-4B35-A56D-B1750A876301}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{1A27C91A-8F12-4B35-A56D-B1750A876301} = {F5644230-172F-41ED-8E61-ABBC384F08B1}
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {91F1A41F-F93F-494E-8D75-5F633D0B6241}
+	EndGlobalSection
+EndGlobal
