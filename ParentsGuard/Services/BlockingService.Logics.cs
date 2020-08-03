@@ -1,7 +1,7 @@
 ﻿using Newtonsoft.Json;
 using ParentsGuard.Types;
+using ParentsGuard.Utilities;
 using System;
-using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Security.AccessControl;
@@ -59,11 +59,17 @@ namespace ParentsGuard.Services
             return false;
         }
 
-        private void BlockFile(string fileName, string operation)
+        private void BlockFile(string fileName, string operation, CancellationToken cancellationToken = default)
         {
             switch (operation)
             {
                 case "delete":
+                    while (FileHelper.IsLocked(fileName))
+                    {
+                        if (cancellationToken.IsCancellationRequested)
+                            throw new System.TimeoutException($"File is still locked by another process after {settings.Timeout} seconds. Will not delete the file (skipped).{Environment.NewLine}Affected file is: {fileName}");
+                        Thread.Sleep(500);
+                    }
                     File.Delete(fileName);
                     break;
                 case "block":
@@ -84,14 +90,16 @@ namespace ParentsGuard.Services
 
         private void BlockHandler(object sender, FileSystemEventArgs e)
         {
-            var cancellationTokenSource = new CancellationTokenSource();
+            // if operation took longer than specified time, cancel it
+            // set Timeout to 0 or less to disable timeout
+            var cancellationTokenSource = settings.Timeout > 0 ? new CancellationTokenSource(settings.Timeout * 1000) : new CancellationTokenSource();
             var worker = new Thread(() =>
             {
                 if (IsFileBlocked(e.FullPath, cancellationTokenSource.Token))
                 {
                     try
                     {
-                        BlockFile(e.FullPath, settings.DefaultAction);
+                        BlockFile(e.FullPath, settings.DefaultAction, cancellationTokenSource.Token);
                         eventLog.WriteEntry($"Successfully blocked file, action: {settings.DefaultAction}, file: {e.FullPath}", EventLogEntryType.SuccessAudit);
                     }
                     catch (Exception ex)
@@ -105,6 +113,7 @@ namespace ParentsGuard.Services
                 }
             });
             threadPool.WorkerThreads.Add((cancellationTokenSource, worker));
+            worker.Start();
         }
     }
 }

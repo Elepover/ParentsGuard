@@ -81,6 +81,7 @@
     <Compile Include="Types\SignatureBlockRule.cs" />
     <Compile Include="Types\Subscription.cs" />
     <Compile Include="Types\ThreadPool.cs" />
+    <Compile Include="Utilities\FileHelper.cs" />
     <Compile Include="Utilities\HashCalculator.cs" />
     <Compile Include="Utilities\LogHelper.cs" />
   </ItemGroup>

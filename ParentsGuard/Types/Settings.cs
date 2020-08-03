@@ -9,6 +9,8 @@ namespace ParentsGuard.Types
         public string DefaultAction { get; set; } = "delete";
         [JsonProperty("fileFilter")]
         public string FileFilter { get; set; } = "*.exe";
+        [JsonProperty("timeout")]
+        public int Timeout { get; set; } = 300;
         [JsonProperty("subscriptions")]
         public List<Subscription> Subscriptions { get; set; } = new List<Subscription>();
         [JsonProperty("ruleSets")]
