@@ -5,10 +5,13 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
+using System.Net.Http;
 using System.Reflection;
 using System.Security.Principal;
 using System.ServiceProcess;
 using System.Text;
+using System.Threading;
 
 namespace ParentsGuard.Services
 {
@@ -16,8 +19,9 @@ namespace ParentsGuard.Services
     {
         private Settings settings;
         private readonly string settingsFileName = Path.Combine(Path.GetDirectoryName(Assembly.GetExecutingAssembly().Location), "settings.json");
-        private readonly ThreadPool threadPool = new ThreadPool();
+        private readonly Types.ThreadPool threadPool = new Types.ThreadPool();
         private readonly List<FileSystemWatcher> fileSystemWatchers = new List<FileSystemWatcher>();
+        private readonly HttpClient httpClient = new HttpClient();
 
         public BlockingService()
         {
@@ -25,12 +29,18 @@ namespace ParentsGuard.Services
             LogHelper.InitLogging();
         }
 
-        protected override void OnStart(string[] args)
+        protected override async void OnStart(string[] args)
         {
+            var swStartup = new Stopwatch();
+            swStartup.Start();
+
             eventLog.WriteEntry("Starting Parents' Guard Blocking Service...");
             eventLog.WriteEntry($"Running as {WindowsIdentity.GetCurrent().Name}.");
+
+            // arm exception handler
             AppDomain.CurrentDomain.UnhandledException += UnhandledExceptionHandler;
 
+            // get settings ready
             eventLog.WriteEntry($"Reading settings from {settingsFileName}");
             if (!File.Exists(settingsFileName))
             {
@@ -45,8 +55,56 @@ namespace ParentsGuard.Services
                 {
                     settings = JsonConvert.DeserializeObject<Settings>(reader.ReadToEnd());
                 }
+                httpClient.Timeout = TimeSpan.FromSeconds(settings.SubscriptionUpdateTimeout);
             }
 
+            // update subscriptions
+            foreach (var subscription in settings.Subscriptions)
+            {
+                if (subscription.Enabled == false) continue;
+                eventLog.WriteEntry($"Updating subscription {subscription.Url}. Timeout: {Math.Round(httpClient.Timeout.TotalSeconds)}s", EventLogEntryType.Information);
+                var retryCounter = 0;
+                Retry:
+                try
+                {
+                    using (var response = await httpClient.GetAsync(subscription.Url))
+                    {
+                        if (!settings.SubscriptionIgnoreHttpCode) response.EnsureSuccessStatusCode();
+                        using (var responseContent = response.Content)
+                        {
+                            var raw = Encoding.UTF8.GetString(await responseContent.ReadAsByteArrayAsync());
+                            var index = settings.RuleSets.FindIndex(x => x.SubscriptionUrl == subscription.Url);
+                            var previousRules = settings.RuleSets[index].Count;
+                            var deserialized = JsonConvert.DeserializeObject<RuleSet>(raw);
+                            if (deserialized.SubscriptionUrl != subscription.Url)
+                            {
+                                if (settings.AllowSubscriptionUrlChange)
+                                {
+                                    eventLog.WriteEntry($"Changing subscription URL from {subscription.Url} to {deserialized.SubscriptionUrl}.", EventLogEntryType.Warning);
+                                    subscription.Url = deserialized.SubscriptionUrl;
+                                }
+                                else
+                                {
+                                    eventLog.WriteEntry($"Subscription URL chang from {subscription.Url} to {deserialized.SubscriptionUrl} is not allowed. Will not update this subscription.", EventLogEntryType.Warning);
+                                }
+                            }
+                            if (index == -1)
+                                settings.RuleSets.Add(deserialized);
+                            else
+                                settings.RuleSets[index] = deserialized;
+                            eventLog.WriteEntry($"Successfully updated subscription.{Environment.NewLine}URL: {subscription.Url}{Environment.NewLine}Rule(s) available: {previousRules} -> {deserialized.Count}", EventLogEntryType.SuccessAudit);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    retryCounter++;
+                    if (retryCounter < subscription.RetryCount) goto Retry;
+                    eventLog.WriteEntry($"Unable to update subscription {subscription.Url}: {ex}");
+                }
+            }
+
+            // prepare filesystem watchers
             foreach (var drive in DriveInfo.GetDrives())
             {
                 if (drive.DriveType == DriveType.Fixed)
@@ -59,6 +117,7 @@ namespace ParentsGuard.Services
                 }
             }
 
+            // start watchers
             foreach (var fileSystemWatcher in fileSystemWatchers)
             {
                 eventLog.WriteEntry($"Started listening to path {fileSystemWatcher.Path}.", EventLogEntryType.Information);
@@ -67,7 +126,23 @@ namespace ParentsGuard.Services
                 fileSystemWatcher.EnableRaisingEvents = true;
             }
 
-            eventLog.WriteEntry($"Startup complete, {fileSystemWatchers.Count} watcher(s) online, {settings.Subscriptions.Count} subscription(s) set, {settings.RuleSets.Count} ruleset(s) available, {settings.RulesCount} rule(s) in total.", EventLogEntryType.SuccessAudit);
+            // start worker cleaner
+            var cleanupWorker = new Thread(() =>
+            {
+                while (true)
+                {
+                    threadPool.EventWaitHandle.WaitOne();
+                    threadPool.Clean();
+                    Thread.Sleep(30000);
+                }
+            })
+            { IsBackground = true };
+
+            threadPool.AlwaysAliveThreads.Add(cleanupWorker);
+            cleanupWorker.Start();
+
+            eventLog.WriteEntry($"Startup complete, took {swStartup.Elapsed}, {fileSystemWatchers.Count} watcher(s) online, {settings.Subscriptions.Count} subscription(s) set, {settings.RuleSets.Count} ruleset(s) available, {settings.RulesCount} rule(s) in total.", EventLogEntryType.SuccessAudit);
+            swStartup.Reset();
         }
 
         protected override void OnPause()
@@ -76,6 +151,7 @@ namespace ParentsGuard.Services
             {
                 fileSystemWatcher.EnableRaisingEvents = false;
             }
+            threadPool.EventWaitHandle.Reset();
         }
 
         protected override void OnContinue()
@@ -84,6 +160,7 @@ namespace ParentsGuard.Services
             {
                 fileSystemWatcher.EnableRaisingEvents = true;
             }
+            threadPool.EventWaitHandle.Set();
         }
 
         protected override void OnStop()
@@ -96,6 +173,7 @@ namespace ParentsGuard.Services
                     fileSystemWatcher.Changed -= BlockHandler;
                     fileSystemWatcher.Created -= BlockHandler;
                 }
+                threadPool.AbortWorkers();
             }
             catch { }
         }

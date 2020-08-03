@@ -11,6 +11,12 @@ namespace ParentsGuard.Types
         public string FileFilter { get; set; } = "*.exe";
         [JsonProperty("timeout")]
         public int Timeout { get; set; } = 300;
+        [JsonProperty("subscriptionUpdateTimeout")]
+        public int SubscriptionUpdateTimeout { get; set; } = 10;
+        [JsonProperty("subscriptionIgnoreHttpCode")]
+        public bool SubscriptionIgnoreHttpCode { get; set; } = false;
+        [JsonProperty("allowSubscriptionUrlChange")]
+        public bool AllowSubscriptionUrlChange { get; set; } = false;
         [JsonProperty("subscriptions")]
         public List<Subscription> Subscriptions { get; set; } = new List<Subscription>();
         [JsonProperty("ruleSets")]

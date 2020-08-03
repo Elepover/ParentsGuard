@@ -45,10 +45,8 @@ namespace ParentsGuard.Services
             }
         }
 
-        private void UnhandledExceptionHandler(object sender, UnhandledExceptionEventArgs e)
-        {
-            eventLog.WriteEntry($"Unhandled exception occurred: {e.ExceptionObject}", EventLogEntryType.Error);
-        }
+        private CancellationTokenSource BuildCancellationTokenSource()
+            => settings.Timeout > 0 ? new CancellationTokenSource(TimeSpan.FromSeconds(settings.Timeout)) : new CancellationTokenSource();
 
         private bool IsFileBlocked(string fileName, CancellationToken cancellationToken = default)
         {
@@ -84,21 +82,35 @@ namespace ParentsGuard.Services
                     fileInfo.SetAccessControl(security);
                     break;
                 default:
-                    throw new ArgumentException($"Unknown operation \"{operation}\".");
+                    throw new ArgumentException($"Unknown operation \"{operation}\". Available operations are \"delete\" and \"block\".");
             }
+        }
+
+        private void UnhandledExceptionHandler(object sender, UnhandledExceptionEventArgs e)
+        {
+            eventLog.WriteEntry($"Unhandled exception occurred: {e.ExceptionObject}", EventLogEntryType.Error);
         }
 
         private void BlockHandler(object sender, FileSystemEventArgs e)
         {
             // if operation took longer than specified time, cancel it
             // set Timeout to 0 or less to disable timeout
-            var cancellationTokenSource = settings.Timeout > 0 ? new CancellationTokenSource(settings.Timeout * 1000) : new CancellationTokenSource();
+            var cancellationTokenSource = BuildCancellationTokenSource();
             var worker = new Thread(() =>
             {
                 if (IsFileBlocked(e.FullPath, cancellationTokenSource.Token))
                 {
+                    if (cancellationTokenSource.IsCancellationRequested)
+                    {
+                        eventLog.WriteEntry($"Timed out ({settings.Timeout}s) determining whether to block or not. File is: {e.FullPath}");
+                        return;
+                    }
                     try
                     {
+                        // shouldn't be disposed elsewhere, but anyway let's
+                        // place it in the try block for more robustness
+                        try { cancellationTokenSource.Dispose(); } catch { }
+                        cancellationTokenSource = BuildCancellationTokenSource();
                         BlockFile(e.FullPath, settings.DefaultAction, cancellationTokenSource.Token);
                         eventLog.WriteEntry($"Successfully blocked file, action: {settings.DefaultAction}, file: {e.FullPath}", EventLogEntryType.SuccessAudit);
                     }

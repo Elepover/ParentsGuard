@@ -9,11 +9,11 @@ namespace ParentsGuard.Utilities
             try
             {
                 using (var stream = File.Open(fileName, FileMode.Open, FileAccess.ReadWrite)) { }
-                return true;
+                return false;
             }
             catch (IOException)
             {
-                return false;
+                return true;
             }
         }
     }

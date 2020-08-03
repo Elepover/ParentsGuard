@@ -7,7 +7,8 @@ namespace ParentsGuard.Types
 {
     public class ThreadPool
     {
-        public List<(EventWaitHandle, Thread)> AlwaysAliveThreads { get; } = new List<(EventWaitHandle, Thread)>();
+        public EventWaitHandle EventWaitHandle { get; } = new EventWaitHandle(true, EventResetMode.ManualReset);
+        public List<Thread> AlwaysAliveThreads { get; } = new List<Thread>();
         public List<(CancellationTokenSource, Thread)> WorkerThreads { get; } = new List<(CancellationTokenSource, Thread)>();
 
         public void Clean()
@@ -20,18 +21,12 @@ namespace ParentsGuard.Types
 
         public void Suspend()
         {
-            foreach (var thread in AlwaysAliveThreads)
-            {
-                thread.Item1.Reset();
-            }
+            EventWaitHandle.Reset();
         }
 
         public void Resume()
         {
-            foreach (var thread in AlwaysAliveThreads)
-            {
-                thread.Item1.Set();
-            }
+            EventWaitHandle.Set();
         }
 
         public void AbortWorker((CancellationTokenSource, Thread) worker)
