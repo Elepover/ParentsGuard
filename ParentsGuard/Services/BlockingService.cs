@@ -93,7 +93,7 @@ namespace ParentsGuard.Services
                                 }
                                 else
                                 {
-                                    eventLog.WriteEntry($"Subscription URL chang from {subscription.Url} to {deserialized.SubscriptionUrl} is not allowed. Will not update this subscription.", EventLogEntryType.Warning);
+                                    eventLog.WriteEntry($"Disallowed subscription URL change from {subscription.Url} to {deserialized.SubscriptionUrl}. Will not update this subscription.", EventLogEntryType.Warning);
                                 }
                             }
                             if (index == -1)
@@ -108,7 +108,7 @@ namespace ParentsGuard.Services
                 {
                     retryCounter++;
                     if (retryCounter < subscription.RetryCount) goto Retry;
-                    eventLog.WriteEntry($"Unable to update subscription {subscription.Url}: {ex}");
+                    eventLog.WriteEntry($"Unable to update subscription (all {retryCounter} retries failed) {subscription.Url}: {ex}");
                 }
             }
 
