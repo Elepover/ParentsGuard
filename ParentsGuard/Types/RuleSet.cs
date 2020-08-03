@@ -26,6 +26,7 @@ namespace ParentsGuard.Types
                ComplexBlockRules.Count;
 
         public bool IsBlocked(string fileName, CancellationToken cancellationToken = default)
-            => BlockRule.IsBlocked(fileName, cancellationToken, FileNameBlockRules, HashBlockRules, SignatureBlockRules, ComplexBlockRules);
+            // must be enabled and blocked at the same time
+            => Enabled && BlockRule.IsBlocked(fileName, cancellationToken, FileNameBlockRules, HashBlockRules, SignatureBlockRules, ComplexBlockRules);
     }
 }

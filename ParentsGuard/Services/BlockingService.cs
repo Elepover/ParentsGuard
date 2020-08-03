@@ -61,7 +61,16 @@ namespace ParentsGuard.Services
             // update subscriptions
             foreach (var subscription in settings.Subscriptions)
             {
-                if (subscription.Enabled == false) continue;
+                var index = settings.RuleSets.FindIndex(x => x.SubscriptionUrl == subscription.Url);
+                if (subscription.Enabled == false)
+                {
+                    if (index != -1)
+                    {
+                        eventLog.WriteEntry($"Subscription {subscription.Url} has been disabled, disabling related ruleset.", EventLogEntryType.Warning);
+                        settings.RuleSets[index].Enabled = false;
+                    }
+                    continue;
+                }
                 eventLog.WriteEntry($"Updating subscription {subscription.Url}. Timeout: {Math.Round(httpClient.Timeout.TotalSeconds)}s", EventLogEntryType.Information);
                 var retryCounter = 0;
                 Retry:
@@ -73,7 +82,6 @@ namespace ParentsGuard.Services
                         using (var responseContent = response.Content)
                         {
                             var raw = Encoding.UTF8.GetString(await responseContent.ReadAsByteArrayAsync());
-                            var index = settings.RuleSets.FindIndex(x => x.SubscriptionUrl == subscription.Url);
                             var previousRules = settings.RuleSets[index].Count;
                             var deserialized = JsonConvert.DeserializeObject<RuleSet>(raw);
                             if (deserialized.SubscriptionUrl != subscription.Url)

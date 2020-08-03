@@ -24,11 +24,11 @@ namespace ParentsGuard.Types
             }
         }
 
-        public static bool IsBlocked(string fileName, CancellationToken cancellationToken = default, params IEnumerable<BlockRule>[] blockRuleSets)
+        public static bool IsBlocked(string fileName, CancellationToken cancellationToken = default, params IEnumerable<BlockRule>[] blockRuleCollections)
         {
-            foreach (var ruleSet in blockRuleSets)
+            foreach (var ruleCollection in blockRuleCollections)
             {
-                foreach (var rule in ruleSet)
+                foreach (var rule in ruleCollection)
                 {
                     if (cancellationToken.IsCancellationRequested) return false;
                     if (rule.IsBlocked(fileName)) return true;
