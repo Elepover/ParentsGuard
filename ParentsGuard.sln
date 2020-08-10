@@ -6,6 +6,9 @@ MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ParentsGuard", "ParentsGuard\ParentsGuard.csproj", "{1A27C91A-8F12-4B35-A56D-B1750A876301}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{F5644230-172F-41ED-8E61-ABBC384F08B1}"
+	ProjectSection(SolutionItems) = preProject
+		README.md = README.md
+	EndProjectSection
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{BC70EDAF-302A-4AF5-96B9-161FBE05DBA4}"
 EndProject
