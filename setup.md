@@ -11,7 +11,7 @@
 
 <details>
 <summary>默认配置文件内容</summary>
-```json
+<code>
 {
   "defaultAction": "delete",
   "fileFilter": "*.exe",
@@ -81,7 +81,7 @@
     }
   ]
 }
-```
+</code>
 <!--GitHub Markdown 能正确解析，Visual Studio Code 不太行-->
 </details>
 
