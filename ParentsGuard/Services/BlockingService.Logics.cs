@@ -93,6 +93,10 @@ namespace ParentsGuard.Services
             var cancellationTokenSource = BuildCancellationTokenSource();
             var worker = new Thread(() =>
             {
+                if (FileHelper.IsFileIgnored(settings.IgnoredLocations, e.FullPath))
+                {
+                    eventLog.WriteEntry($"Ignored file {e.FullPath}.", EventLogEntryType.Information);
+                }
                 if (ShouldFileBeBlocked(e.FullPath, cancellationTokenSource.Token))
                 {
                     if (cancellationTokenSource.IsCancellationRequested)

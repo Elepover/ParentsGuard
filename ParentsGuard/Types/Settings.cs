@@ -11,7 +11,7 @@ namespace ParentsGuard.Types
         [JsonProperty("fileFilter")]
         public string FileFilter { get; set; } = "*.exe";
         [JsonProperty("ignoredLocations")]
-        public List<string> IgnoredLocations = new List<string>()
+        public List<string> IgnoredLocations { get; set; } = new List<string>()
         {
             Environment.GetFolderPath(Environment.SpecialFolder.Windows)
         };
