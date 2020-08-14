@@ -1,4 +1,5 @@
 ﻿using Newtonsoft.Json;
+using System;
 using System.Collections.Generic;
 
 namespace ParentsGuard.Types
@@ -9,6 +10,11 @@ namespace ParentsGuard.Types
         public string DefaultAction { get; set; } = "delete";
         [JsonProperty("fileFilter")]
         public string FileFilter { get; set; } = "*.exe";
+        [JsonProperty("ignoredLocations")]
+        public List<string> IgnoredLocations = new List<string>()
+        {
+            Environment.GetFolderPath(Environment.SpecialFolder.Windows)
+        };
         [JsonProperty("timeout")]
         public int Timeout { get; set; } = 300;
         [JsonProperty("subscriptionUpdateTimeout")]

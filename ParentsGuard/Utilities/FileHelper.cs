@@ -1,10 +1,24 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 
 namespace ParentsGuard.Utilities
 {
     public class FileHelper
     {
+        public static bool IsFileIgnored(List<string> locations, string fileName)
+        {
+            foreach (var file in locations)
+            {
+                if (File.GetAttributes(file).HasFlag(FileAttributes.Directory))
+                {
+                    if (fileName.Contains(file)) return true;
+                }
+                else if (file == fileName) return true;
+            }
+            return false;
+        }
+
         public static bool IsLocked(string fileName)
         {
             try
