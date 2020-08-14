@@ -22,6 +22,7 @@ namespace ParentsGuard.Types
         [JsonProperty("ruleSets")]
         public List<RuleSet> RuleSets { get; set; } = new List<RuleSet>();
 
+        [JsonIgnore]
         public int RulesCount
         {
             get

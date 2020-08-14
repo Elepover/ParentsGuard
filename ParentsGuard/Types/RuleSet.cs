@@ -19,6 +19,7 @@ namespace ParentsGuard.Types
         [JsonProperty("complexRules")]
         public List<ComplexBlockRule> ComplexBlockRules { get; set; } = new List<ComplexBlockRule>();
 
+        [JsonIgnore]
         public int Count
             => FileNameBlockRules.Count +
                HashBlockRules.Count +
