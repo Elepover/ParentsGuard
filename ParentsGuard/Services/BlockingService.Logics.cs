@@ -2,8 +2,10 @@
 using ParentsGuard.Types;
 using ParentsGuard.Utilities;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
+using System.Linq;
 using System.Security.AccessControl;
 using System.Security.Principal;
 using System.ServiceProcess;
@@ -48,6 +50,8 @@ namespace ParentsGuard.Services
         private CancellationTokenSource BuildCancellationTokenSource()
             => settings.Timeout > 0 ? new CancellationTokenSource(TimeSpan.FromSeconds(settings.Timeout)) : new CancellationTokenSource();
 
+        private List<string> filesBeingMonitored = new List<string>();
+
         private bool ShouldFileBeBlocked(string fileName, CancellationToken cancellationToken = default)
         {
             foreach (var ruleSet in settings.RuleSets)
@@ -88,6 +92,8 @@ namespace ParentsGuard.Services
 
         private void BlockHandler(object sender, FileSystemEventArgs e)
         {
+            // ignore file if there's already a thread attached to it
+            if (filesBeingMonitored.Any(x => x == e.FullPath)) return;
             // if operation took longer than specified time, cancel it
             // set Timeout to 0 or less to disable timeout
             var cancellationTokenSource = BuildCancellationTokenSource();
@@ -97,11 +103,15 @@ namespace ParentsGuard.Services
                 {
                     eventLog.WriteEntry($"Ignored file {e.FullPath}.", EventLogEntryType.Information);
                 }
+
+                // prevent any more threads from looking onto it
+                filesBeingMonitored.Add(e.FullPath);
                 if (ShouldFileBeBlocked(e.FullPath, cancellationTokenSource.Token))
                 {
                     if (cancellationTokenSource.IsCancellationRequested)
                     {
                         eventLog.WriteEntry($"Timed out ({settings.Timeout}s) determining whether to block or not. File is: {e.FullPath}");
+                        filesBeingMonitored.Remove(e.FullPath);
                         return;
                     }
                     try
@@ -117,10 +127,15 @@ namespace ParentsGuard.Services
                     {
                         eventLog.WriteEntry($"Unable to block file {e.FullPath}: {ex}", EventLogEntryType.FailureAudit);
                     }
+                    finally
+                    {
+                        filesBeingMonitored.Remove(e.FullPath);
+                    }
                 }
                 else
                 {
                     eventLog.WriteEntry($"Check passed for {e.FullPath}.", EventLogEntryType.Information);
+                    filesBeingMonitored.Remove(e.FullPath);
                 }
             });
             threadPool.WorkerThreads.Add((cancellationTokenSource, worker));
