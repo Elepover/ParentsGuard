@@ -1,21 +1,19 @@
 ﻿using System;
-using System.Collections;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Runtime.CompilerServices;
 using System.Threading;
 
 namespace ParentsGuard.Types
 {
     public abstract class BlockRule
     {
-        protected abstract bool Verify(string fileName);
+        protected abstract bool Verify(string fileName, CancellationToken cancellationToken);
         protected abstract new string ToString();
-        public bool IsBlocked(string fileName)
+        public bool IsBlocked(string fileName, CancellationToken cancellationToken)
         {
             try
             {
-                return Verify(fileName);
+                return Verify(fileName, cancellationToken);
             }
             catch (Exception ex)
             {
@@ -31,7 +29,7 @@ namespace ParentsGuard.Types
                 foreach (var rule in ruleCollection)
                 {
                     if (cancellationToken.IsCancellationRequested) return false;
-                    if (rule.IsBlocked(fileName)) return true;
+                    if (rule.IsBlocked(fileName, cancellationToken)) return true;
                 }
             }
             return false;

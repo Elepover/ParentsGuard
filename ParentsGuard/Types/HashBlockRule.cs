@@ -3,6 +3,7 @@ using ParentsGuard.Utilities;
 using System;
 using System.Diagnostics;
 using System.IO;
+using System.Threading;
 
 namespace ParentsGuard.Types
 {
@@ -16,8 +17,9 @@ namespace ParentsGuard.Types
         protected override string ToString()
             => $"hashType: {HashType}{Environment.NewLine}hash: {Hash}";
 
-        protected override bool Verify(string fileName)
+        protected override bool Verify(string fileName, CancellationToken cancellationToken = default)
         {
+            FileHelper.WaitFileRelease(fileName, cancellationToken);
             var file = new FileInfo(fileName);
             string actualHash;
             switch (HashType)

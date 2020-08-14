@@ -48,7 +48,7 @@ namespace ParentsGuard.Services
         private CancellationTokenSource BuildCancellationTokenSource()
             => settings.Timeout > 0 ? new CancellationTokenSource(TimeSpan.FromSeconds(settings.Timeout)) : new CancellationTokenSource();
 
-        private bool IsFileBlocked(string fileName, CancellationToken cancellationToken = default)
+        private bool ShouldFileBeBlocked(string fileName, CancellationToken cancellationToken = default)
         {
             foreach (var ruleSet in settings.RuleSets)
             {
@@ -62,12 +62,7 @@ namespace ParentsGuard.Services
             switch (operation)
             {
                 case "delete":
-                    while (FileHelper.IsLocked(fileName))
-                    {
-                        if (cancellationToken.IsCancellationRequested)
-                            throw new System.TimeoutException($"File is still locked by another process after {settings.Timeout} seconds. Will not delete the file (skipped).{Environment.NewLine}Affected file is: {fileName}");
-                        Thread.Sleep(500);
-                    }
+                    FileHelper.WaitFileRelease(fileName, cancellationToken);
                     File.Delete(fileName);
                     break;
                 case "block":
@@ -98,7 +93,7 @@ namespace ParentsGuard.Services
             var cancellationTokenSource = BuildCancellationTokenSource();
             var worker = new Thread(() =>
             {
-                if (IsFileBlocked(e.FullPath, cancellationTokenSource.Token))
+                if (ShouldFileBeBlocked(e.FullPath, cancellationTokenSource.Token))
                 {
                     if (cancellationTokenSource.IsCancellationRequested)
                     {

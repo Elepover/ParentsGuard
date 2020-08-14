@@ -1,8 +1,10 @@
 ﻿using Newtonsoft.Json;
+using ParentsGuard.Utilities;
 using System;
 using System.Diagnostics;
 using System.Security.Cryptography.X509Certificates;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace ParentsGuard.Types
 {
@@ -16,8 +18,9 @@ namespace ParentsGuard.Types
         protected override string ToString()
             => $"dataType: {DataType}{Environment.NewLine}data: {Data}";
 
-        protected override bool Verify(string fileName)
+        protected override bool Verify(string fileName, CancellationToken cancellationToken = default)
         {
+            FileHelper.WaitFileRelease(fileName, cancellationToken);
             var oldCert = X509Certificate.CreateFromSignedFile(fileName);
             if (oldCert is null) return false;
             var cert = new X509Certificate2(oldCert);

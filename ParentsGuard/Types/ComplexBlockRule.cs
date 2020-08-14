@@ -1,5 +1,6 @@
 ﻿using Newtonsoft.Json;
 using System.Collections.Generic;
+using System.Threading;
 
 namespace ParentsGuard.Types
 {
@@ -15,7 +16,7 @@ namespace ParentsGuard.Types
         protected override string ToString()
             => $"fileNameRules: {FileNameBlockRules.Count}, hashRules: {HashBlockRules.Count}, signatureRules: {SignatureBlockRules.Count}";
 
-        protected override bool Verify(string fileName)
-            => IsBlocked(fileName, default, FileNameBlockRules, HashBlockRules, SignatureBlockRules);
+        protected override bool Verify(string fileName, CancellationToken cancellationToken = default)
+            => IsBlocked(fileName, cancellationToken, FileNameBlockRules, HashBlockRules, SignatureBlockRules);
     }
 }

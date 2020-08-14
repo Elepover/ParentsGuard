@@ -2,6 +2,7 @@
 using System;
 using System.IO;
 using System.Text.RegularExpressions;
+using System.Threading;
 
 namespace ParentsGuard.Types
 {
@@ -17,9 +18,9 @@ namespace ParentsGuard.Types
         public bool ContainsExtension { get; set; } = true;
 
         protected override string ToString()
-            => $"fileName: {FileName}{Environment.NewLine}caseSensitive: {CaseSensitive}{Environment.NewLine}containsExtension: {ContainsExtension}";
+            => $"fileName: {FileName}{Environment.NewLine}useRegex: {UseRegularExpression}{Environment.NewLine}caseSensitive: {CaseSensitive}{Environment.NewLine}containsExtension: {ContainsExtension}";
 
-        protected override bool Verify(string fileName)
+        protected override bool Verify(string fileName, CancellationToken cancellationToken = default)
         {
             var fileNameWithoutPath = ContainsExtension ?
                 Path.GetFileName(fileName) : Path.GetFileNameWithoutExtension(fileName);
